@@ -2,14 +2,8 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server" >
-    <asp:GridView ID="gvProductList" runat="server" AutoGenerateColumns="False" DataKeyNames="ProductID" DataSourceID="sdsDatabase" CellPadding="4" ForeColor="#333333" GridLines="None">
+    <asp:GridView ID="gvProductList" runat="server" AutoGenerateColumns="False" DataSourceID="sdsDatabase" CellPadding="4" ForeColor="#333333" GridLines="None">
         <AlternatingRowStyle BackColor="White" ForeColor="#284775" />
-        <Columns>
-            <asp:BoundField DataField="ProductID" HeaderText="ProductID" ReadOnly="True" SortExpression="ProductID" />
-            <asp:BoundField DataField="ProductName" HeaderText="ProductName" SortExpression="ProductName" />
-            <asp:BoundField DataField="UnitPrice" HeaderText="UnitPrice" SortExpression="UnitPrice" />
-            <asp:BoundField DataField="Description" HeaderText="Description" SortExpression="Description" />
-        </Columns>
         <EditRowStyle BackColor="#999999" />
         <FooterStyle BackColor="#5D7B9D" Font-Bold="True" ForeColor="White" />
         <HeaderStyle BackColor="#5D7B9D" Font-Bold="True" ForeColor="White" />

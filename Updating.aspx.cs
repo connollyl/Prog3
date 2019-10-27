@@ -14,27 +14,43 @@ namespace WebSite.Prog3
     public partial class WebForm2 : System.Web.UI.Page
     {
         private SQLDataClass sqlDC = new SQLDataClass();
-        private int DTIndex = 0;
+        private int DTIndex;
         protected void Page_Load(object sender, EventArgs e)
         {
-            ValidationSettings.UnobtrusiveValidationMode = UnobtrusiveValidationMode.None;
-           // if (Session["Index"].ToString().Equals(""))
-            //{
-                //Session["Index"] = "0";
-            //}
-            //DTIndex = Int32.Parse(Session["Index"].ToString());
-            sqlDC.fillDataTable();
-            txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
-            txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
-            txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
-            txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
-            txtMessage.Text = "";
+            if (!Page.IsPostBack)
+            {
+                ValidationSettings.UnobtrusiveValidationMode = UnobtrusiveValidationMode.None;
+                sqlDC.fillDataTable();
+                if (string.IsNullOrEmpty(Session["Index"] as string))
+                {
+                    DTIndex = 0;
+                    Session["Index"] = DTIndex.ToString();
+                }
+                else
+                {
+                    DTIndex = Int32.Parse(Session["Index"].ToString());
+                }
+                txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
+                txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
+                txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
+                txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
+                txtMessage.Text = "";
+            }
+            else
+            {
+                DTIndex = Int32.Parse(Session["Index"].ToString());
+                sqlDC.fillDataTable();
+                //txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
+                //txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
+                //txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
+                //txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
+            }
         }
 
         protected void btnFirst_Click(object sender, EventArgs e)
         {
             DTIndex = 0;
-            //Session["Index"] = DTIndex.ToString();
+            Session["Index"] = DTIndex.ToString();
             txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
             txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
             txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
@@ -45,7 +61,7 @@ namespace WebSite.Prog3
         {
             int lastRow = sqlDC.dTable.Rows.Count - 1;
             DTIndex = lastRow;
-            //Session["Index"] = DTIndex.ToString();
+            Session["Index"] = DTIndex.ToString();
             txtPID.Text = sqlDC.dTable.Rows[lastRow]["ProductID"].ToString();
             txtName.Text = sqlDC.dTable.Rows[lastRow]["ProductName"].ToString();
             txtPrice.Text = sqlDC.dTable.Rows[lastRow]["UnitPrice"].ToString();
@@ -54,10 +70,11 @@ namespace WebSite.Prog3
 
         protected void btnPrevious_Click(object sender, EventArgs e)
         {
+            DTIndex = Int32.Parse(Session["Index"].ToString());
             if (DTIndex > 0)
             {
                 DTIndex = DTIndex - 1;
-                //Session["Index"] = DTIndex.ToString();
+                Session["Index"] = DTIndex.ToString();
                 txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
                 txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
                 txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
@@ -67,14 +84,22 @@ namespace WebSite.Prog3
 
         protected void btnNext_Click(object sender, EventArgs e)
         {
-            if (DTIndex < sqlDC.dTable.Rows.Count)
+            DTIndex = Int32.Parse(Session["Index"].ToString());
+            if (DTIndex < sqlDC.dTable.Rows.Count - 1)
             {
                 DTIndex = DTIndex + 1;
-                //Session["Index"] = DTIndex.ToString();
-                txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
-                txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
-                txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
-                txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
+                Session["Index"] = DTIndex.ToString();
+                try
+                {
+                    txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
+                    txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
+                    txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
+                    txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
+                }
+                catch (Exception ex)
+                {
+                    txtMessage.Text = "Error getting next item";
+                }
             }
         }
 
@@ -82,7 +107,8 @@ namespace WebSite.Prog3
         {
             if (btnDelete.Text.Equals("Delete"))
             {
-                if (DTIndex == sqlDC.dTable.Rows.Count)
+                DTIndex = Int32.Parse(Session["Index"].ToString());
+                if (DTIndex == sqlDC.dTable.Rows.Count - 1)
                 {
                     sqlDC.dTable.Rows[DTIndex].Delete();
                     DTIndex = DTIndex - 1;
@@ -111,7 +137,6 @@ namespace WebSite.Prog3
                     try
                     {
                         sqlDC.updateDatabase();
-
                     }
                     catch (Exception ex)
                     {
@@ -170,19 +195,48 @@ namespace WebSite.Prog3
             }
             else
             {
-                DataRow Dr = sqlDC.dTable.NewRow();
-                Dr["ProductID"] = txtPID.Text;
-                Dr["ProductName"] = txtName.Text;
-                Dr["UnitPrice"] = txtPrice.Text;
-                Dr["Description"] = txtDesc.Text;
-                sqlDC.dTable.Rows.Add(Dr);
                 try
                 {
-                    sqlDC.updateDatabase();
+                    SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["UWPCS3870ConnectionString"].ConnectionString);
+                    conn.Open();
+                    string insertCom = "insert into Product (ProductID, ProductName, UnitPrice, Description) values (@ID, @name, @price, @description)";
+                    SqlCommand com = new SqlCommand(insertCom, conn);
+                    com.Parameters.AddWithValue("@id", txtPID.Text);
+                    com.Parameters.AddWithValue("@name", txtName.Text);
+                    com.Parameters.AddWithValue("@price", txtPrice.Text);
+                    com.Parameters.AddWithValue("@description", txtDesc.Text);
+                    com.ExecuteNonQuery();
+                    conn.Close();
+                    DTIndex = Int32.Parse(Session["Index"].ToString());
+                    txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
+                    txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
+                    txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
+                    txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
+                    btnUpdate.Enabled = true;
+                    btnFirst.Enabled = true;
+                    btnPrevious.Enabled = true;
+                    btnNext.Enabled = true;
+                    btnLast.Enabled = true;
+                    txtPID.ReadOnly = true;
+                    btnNew.Text = "New";
+                    btnDelete.Text = "Delete";
                 }
                 catch (Exception ex)
                 {
+                    Response.Write(ex.ToString());
                     txtMessage.Text = "Error updating database.";
+                    txtPID.Text = sqlDC.dTable.Rows[DTIndex]["ProductID"].ToString();
+                    txtName.Text = sqlDC.dTable.Rows[DTIndex]["ProductName"].ToString();
+                    txtPrice.Text = sqlDC.dTable.Rows[DTIndex]["UnitPrice"].ToString();
+                    txtDesc.Text = sqlDC.dTable.Rows[DTIndex]["Description"].ToString();
+                    btnUpdate.Enabled = true;
+                    btnFirst.Enabled = true;
+                    btnPrevious.Enabled = true;
+                    btnNext.Enabled = true;
+                    btnLast.Enabled = true;
+                    txtPID.ReadOnly = true;
+                    btnNew.Text = "New";
+                    btnDelete.Text = "Delete";
                 }
             }
         }
